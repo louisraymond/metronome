@@ -1,6 +1,5 @@
 import { clamp } from './utils.js';
 
-// Single source of truth for app state
 export const st = {
   // Tempo/meter
   bpm: 120,
@@ -18,6 +17,7 @@ export const st = {
   bars: 1,
   beats: 0,
   sinceBars: 0,
+  sinceSeconds: 0,
 
   // Scheduling
   lookahead: 0.025,
@@ -32,6 +32,8 @@ export const st = {
   stepN: 4,
   armed: false,
   autoStop: true,
+  loopMode: 'bars', // 'bars' or 'time'
+  stepDurationSec: 60,
 
   // Count-in
   countInBars: 2,
@@ -42,6 +44,35 @@ export const st = {
 
   // UI cache
   leds: [],
+
+  // MIDI accompaniment
+  midi: {
+    enabled: false,
+    loaded: false,
+    name: '',
+    notes: [],
+    duration: 0,
+    cursor: 0,
+    startTime: 0,
+    volume: 0.6,
+    offsetBeats: 0,
+    totalBeats: 0,
+    barEstimate: 0,
+    timeSignature: { numerator: 4, denominator: 4 },
+    anchorTime: 0,
+    anchorBeat: 0,
+    timeline: [],
+    timelineLength: 0,
+    scheduledBeats: 0,
+    countInBeats: 0,
+    loopBeats: 0,
+    instrument: 'synth',
+    sfPlayer: null,
+    sfLoadPromise: null,
+    sfPending: [],
+    sfActive: [],
+    sfLoadError: null,
+  },
 };
 
 export function setTempo(bpm) {
@@ -55,9 +86,9 @@ export function resetCounters(now, oneBeatDuration) {
   st.bars = 1;
   st.beats = 0;
   st.sinceBars = 0;
+  st.sinceSeconds = 0;
   // Prepare so the next scheduled click is beat 1 (index 0), one beat later
   st.curBeatInBar = st.beatsPerBar - 1;
   st.nextNoteTime = (now ?? 0) + (oneBeatDuration ?? 0);
   st.countInRemaining = st.armed ? Math.max(0, st.countInBars || 0) : 0;
 }
-

@@ -12,6 +12,11 @@
 <body>
   <header>
     <div class="brand">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
       <div class="dot"></div><div>Metronome Trainer</div>
       <span class="pill">Speed + Bars</span>
     </div>
@@ -22,7 +27,15 @@
     </div>
   </header>
 
-  <main class="wrap">
+  <nav class="side-menu" id="sideMenu">
+    <button class="close" id="closeMenuBtn" aria-label="Close menu">×</button>
+    <ul>
+      <li><a href="#metronome" data-route="metronome" class="active">Metronome</a></li>
+      <li><a href="#plans" data-route="practicePlans">Practice Plans</a></li>
+    </ul>
+  </nav>
+
+  <main class="wrap" id="metronomeView">
     <div class="grid">
       <!-- Metronome -->
       <section class="card">
@@ -31,7 +44,7 @@
           <div class="tempo-circle" id="tempoCircle">
             <div class="tempo-number"><span id="bpmReadout">120</span> BPM</div>
             <div class="tempo-sub">
-              Step every <span id="stepRuleReadout">4 bars</span> · Target <span id="targetReadout">160</span>
+              Loop <span id="stepRuleReadout">4 bars</span> · Target <span id="targetReadout">160</span>
             </div>
             <div class="meter" id="meterLeds"></div>
           </div>
@@ -83,6 +96,39 @@
           <div class="item"><div class="small">Bars</div><div class="val" id="barsKpi">1</div></div>
           <div class="item"><div class="small">Beats</div><div class="val" id="beatsKpi">0</div></div>
         </div>
+
+        <div class="midi-tools" id="midiControls">
+          <h3>MIDI Accompaniment</h3>
+          <div class="small" style="color:var(--muted);margin-top:4px">Choose a built-in study track or upload your own .mid file to layer a piano guide with the click.</div>
+          <div class="row midi-library-row" style="margin-top:10px">
+            <div class="col">
+              <label for="midiLibrary">Built-in Library</label>
+              <select id="midiLibrary"></select>
+            </div>
+            <div class="col upload-col">
+              <label for="midiFile">Upload Custom</label>
+              <input type="file" id="midiFile" accept=".mid,.midi" />
+            </div>
+            <button class="btn ghost" id="clearMidiBtn">Clear</button>
+          </div>
+          <div class="row midi-controls-row" style="margin-top:10px">
+            <label class="chip"><input type="checkbox" id="midiEnable" /> Enable</label>
+            <div class="volume-control">
+              <label for="midiVolume">Volume</label>
+              <input type="range" id="midiVolume" min="0" max="100" value="60" />
+            </div>
+          </div>
+          <div class="row midi-instrument-row" style="margin-top:10px">
+            <div class="col">
+              <label for="midiInstrument">Sound</label>
+              <select id="midiInstrument">
+                <option value="synth" selected>Internal Synth</option>
+                <option value="rhodes">Rhodes (SoundFont)</option>
+              </select>
+            </div>
+          </div>
+          <div class="small" id="midiStatus" style="margin-top:8px">No MIDI loaded.</div>
+        </div>
       </section>
 
       <!-- Speed Trainer -->
@@ -95,13 +141,24 @@
         </div>
         <div class="row" style="margin-top:6px">
           <div class="col">
-            <label>Step every N bars</label>
-            <div class="row">
-              <input type="number" id="stepN" value="4" min="1" style="max-width:120px"/>
-              <div class="switch" id="dirSwitch">
-                <button class="active" data-dir="up">Up</button>
-                <button data-dir="down">Down</button>
+            <label>Loop Rule</label>
+            <div class="row" id="loopRuleRow">
+              <select id="loopMode" style="max-width:140px">
+                <option value="bars" selected>Bars</option>
+                <option value="time">Time</option>
+              </select>
+              <div class="row sub" id="loopBarsGroup">
+                <input type="number" id="stepN" value="4" min="1" style="max-width:120px"/>
+                <span class="unit-label">bars</span>
               </div>
+              <div class="row sub hidden" id="loopTimeGroup">
+                <div class="time-field"><input type="number" id="stepMinutes" value="1" min="0" style="max-width:90px"/><span class="unit-label">min</span></div>
+                <div class="time-field"><input type="number" id="stepSeconds" value="0" min="0" max="59" style="max-width:90px"/><span class="unit-label">sec</span></div>
+              </div>
+            </div>
+            <div class="switch" id="dirSwitch" style="margin-top:8px">
+              <button class="active" data-dir="up">Up</button>
+              <button data-dir="down">Down</button>
             </div>
           </div>
           <div class="col">
@@ -114,10 +171,23 @@
           </div>
         </div>
         <div class="small" style="margin-top:8px">
-          When armed, the click starts at Start BPM, counts in for the specified bars, then steps by the increment every N bars until the target (or forever if Stop at target is off).
+          When armed, the click starts at Start BPM, counts in for the specified bars, then loops for the selected bars or time before stepping by the increment toward the target (or forever if Stop at target is off).
         </div>
+        <div class="small" id="drillEstimate" style="margin-top:4px">Estimated time: —</div>
       </section>
     </div>
+  </main>
+
+  <main class="wrap hidden" id="practicePlansView">
+    <section class="card">
+      <h2>Practice Plans</h2>
+      <p class="small" style="max-width:600px">
+        Queue prebuilt exercises, set tempo targets, and export plans as JSON. UI coming soon — placeholder for now.
+      </p>
+      <div class="placeholder">
+        <p>No plans loaded yet. Export from the metronome view or drop JSON files into <code>assets/plans/</code>.</p>
+      </div>
+    </section>
   </main>
 </body>
 </html>

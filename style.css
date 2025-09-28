@@ -49,6 +49,26 @@ header {
 	font-weight: 900
 }
 
+.hamburger {
+	width: 34px;
+	height: 28px;
+	border: none;
+	background: transparent;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 4px 6px;
+	cursor: pointer;
+}
+
+.hamburger span {
+	display: block;
+	height: 3px;
+	border-radius: 3px;
+	background: #f8fbff;
+	box-shadow: 0 1px 3px #0007;
+}
+
 .brand .dot {
 	width: 14px;
 	height: 14px;
@@ -138,8 +158,22 @@ select {
 	outline: none
 }
 
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0
+}
+
+input[type="number"] {
+	-moz-appearance: textfield
+}
+
 input[type="range"] {
 	width: 100%
+}
+
+.hidden {
+	display: none !important
 }
 
 .btn {
@@ -167,6 +201,23 @@ input[type="range"] {
 
 .btn.red {
 	background: linear-gradient(135deg, #ff9aa2, #ef476f)
+}
+
+.row.sub {
+	margin: 0;
+	align-items: center;
+	flex-wrap: nowrap
+}
+
+.time-field {
+	display: flex;
+	align-items: center;
+	gap: 6px
+}
+
+.unit-label {
+	font-size: 12px;
+	color: var(--muted)
 }
 
 .tempo-display {
@@ -300,4 +351,265 @@ input[type="range"] {
 	gap: 8px;
 	flex-wrap: wrap;
 	margin-top: 6px
+}
+
+.midi-tools {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid #ffffff22;
+	display: flex;
+	flex-direction: column;
+	gap: 8px
+}
+
+.midi-tools h3 {
+	margin: 0;
+	font-size: 16px
+}
+
+.midi-tools input[type="file"] {
+	flex: 1;
+	min-width: 220px
+}
+
+.midi-library-row {
+	align-items: flex-end;
+	gap: 10px
+}
+
+.midi-library-row .col {
+	min-width: 180px
+}
+
+.upload-col input[type="file"] {
+	margin-top: 4px
+}
+
+.midi-controls-row {
+	align-items: center;
+	gap: 16px
+}
+
+.midi-instrument-row {
+	align-items: center;
+	gap: 10px
+}
+
+.side-menu {
+	position: fixed;
+	left: -240px;
+	top: 0;
+	bottom: 0;
+	width: 220px;
+	background: rgba(5, 12, 25, 0.92);
+	box-shadow: 6px 0 18px rgba(0, 0, 0, 0.35);
+	padding: 20px 16px;
+	transition: transform 0.3s ease;
+	z-index: 999;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.side-menu.open {
+	transform: translateX(240px);
+}
+
+.side-menu .close {
+	align-self: flex-end;
+	border: none;
+	background: transparent;
+	font-size: 26px;
+	color: #f8fbff;
+	cursor: pointer;
+}
+
+.side-menu ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.side-menu a {
+	color: #e1edff;
+	text-decoration: none;
+	font-weight: 600;
+	padding: 6px 8px;
+	border-radius: 6px;
+	display: block;
+}
+
+.side-menu a.active,
+.side-menu a:hover {
+	background: rgba(142, 197, 255, 0.2);
+}
+
+.placeholder {
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px dashed rgba(255, 255, 255, 0.2);
+	border-radius: 12px;
+	padding: 18px;
+	color: var(--muted);
+}
+
+.volume-control {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 180px
+}
+
+.volume-control label {
+	font-size: 12px;
+	color: var(--muted)
+}
+
+.practice-plans-view .plans-layout {
+	display: grid;
+	gap: 18px;
+	grid-template-columns: minmax(240px, 320px) 1fr;
+}
+
+@media (max-width: 960px) {
+	.practice-plans-view .plans-layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+.practice-plans-view .plans-column {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-height: 420px;
+}
+
+.practice-plans-view .plan-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.practice-plans-view .plan-list-item {
+	margin: 0;
+}
+
+.practice-plans-view .plan-list-button {
+	width: 100%;
+	padding: 10px 12px;
+	border-radius: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	background: rgba(255, 255, 255, 0.08);
+	color: #f8fbff;
+	text-align: left;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.practice-plans-view .plan-list-button:hover {
+	background: rgba(255, 255, 255, 0.16);
+	transform: translateX(2px);
+}
+
+.practice-plans-view .plan-list-button.active {
+	background: linear-gradient(135deg, rgba(255, 209, 102, 0.38), rgba(17, 138, 178, 0.4));
+	border-color: rgba(255, 255, 255, 0.55);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.practice-plans-view .plan-detail-header {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.practice-plans-view .plan-detail-title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 800;
+}
+
+.practice-plans-view .plan-detail-description {
+	margin: 0;
+	color: var(--muted);
+	font-size: 14px;
+	max-width: 640px;
+}
+
+.practice-plans-view .exercise-list {
+	list-style: none;
+	counter-reset: exercise;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.practice-plans-view .exercise-item {
+	position: relative;
+	padding: 12px 14px 12px 46px;
+	background: rgba(255, 255, 255, 0.06);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 14px;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.practice-plans-view .exercise-item::before {
+	counter-increment: exercise;
+	content: counter(exercise);
+	position: absolute;
+	left: 14px;
+	top: 12px;
+	width: 24px;
+	height: 24px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.28);
+	display: grid;
+	place-items: center;
+	font-weight: 700;
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.practice-plans-view .exercise-title {
+	font-weight: 700;
+	font-size: 15px;
+	margin: 0 0 4px;
+}
+
+.practice-plans-view .exercise-meta {
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.practice-plans-view .exercise-notes {
+	margin-top: 6px;
+	font-size: 13px;
+	color: #f8fbff;
+	opacity: 0.85;
+}
+
+.practice-plans-view .plan-controls {
+	margin-top: auto;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	justify-content: flex-end;
+}
+
+.practice-plans-view .empty-state {
+	text-align: center;
+	padding: 16px;
+	background: rgba(255, 255, 255, 0.04);
+	border-radius: 12px;
+	border: 1px dashed rgba(255, 255, 255, 0.2);
+	color: var(--muted);
 }
