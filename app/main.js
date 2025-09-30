@@ -50,6 +50,9 @@ function createApp({
   routerMod,
   practicePlansMod,
   practicePlansViewMod,
+  practiceQueueMod,
+  practiceSessionViewMod,
+  menuControllerMod,
 }) {
   const { st, setTempo, resetCounters } = stateMod;
   const {
@@ -69,8 +72,16 @@ function createApp({
   const { considerStep } = speedMod;
   const { bindUI } = uiMod;
   const { createRouter } = routerMod || {};
-  const { loadPlans, exportCurrentPlan } = practicePlansMod || {};
+  const { attachMenuController } = menuControllerMod || {};
+  const {
+    loadPlans,
+    exportCurrentPlan,
+    saveUserPlan,
+    deleteUserPlan,
+  } = practicePlansMod || {};
   const { createPracticePlansView } = practicePlansViewMod || {};
+  const { createPracticeQueue } = practiceQueueMod || {};
+  const { createPracticeSessionView } = practiceSessionViewMod || {};
 
   const secPerBeat = () => (60.0 / st.bpm) * (4 / st.beatUnit);
 
@@ -85,6 +96,8 @@ function createApp({
 
   const metronomeViewEl = hasDOM ? document.getElementById('metronomeView') : null;
   const practicePlansViewEl = hasDOM ? document.getElementById('practicePlansView') : null;
+  const sessionCardEl = hasDOM ? document.getElementById('sessionProgressCard') : null;
+  const gridEl = hasDOM ? document.querySelector('.grid') : null;
   const sideMenuEl = hasDOM ? document.getElementById('sideMenu') : null;
   const hamburgerEl = hasDOM ? document.getElementById('hamburgerBtn') : null;
   const closeMenuEl = hasDOM ? document.getElementById('closeMenuBtn') : null;
@@ -93,19 +106,21 @@ function createApp({
     : [];
 
   let practicePlansView = null;
-  let practicePlansLoadPromise = null;
   let cachedPracticePlans = [];
+  let practiceQueue = null;
+  let practiceSessionView = null;
+  const practiceOverrides = new Map();
 
-  const ensurePracticePlansLoaded = () => {
-    if (!hasDOM || !practicePlansView || typeof loadPlans !== 'function') {
-      return Promise.resolve(cachedPracticePlans);
-    }
-    if (practicePlansLoadPromise) return practicePlansLoadPromise;
-    practicePlansLoadPromise = loadPlans()
+  const reloadPlans = (focusId) => {
+    if (typeof loadPlans !== 'function' || !practicePlansView) return Promise.resolve([]);
+    return loadPlans()
       .then((plans) => {
         cachedPracticePlans = Array.isArray(plans) ? plans : [];
-        practicePlansView.setPlans(cachedPracticePlans);
         st.practicePlansLibrary = cachedPracticePlans;
+        practicePlansView.setPlans(cachedPracticePlans);
+        if (focusId) {
+          practicePlansView.selectPlan(focusId);
+        }
         return cachedPracticePlans;
       })
       .catch((err) => {
@@ -115,19 +130,148 @@ function createApp({
         st.practicePlansLibrary = [];
         return [];
       });
-    return practicePlansLoadPromise;
+  };
+
+  const mergeExerciseWithOverride = (exercise) => {
+    if (!exercise) return null;
+    const override = practiceOverrides.get(exercise.id);
+    if (!override) return exercise;
+    const tempo = { ...exercise.tempo };
+    if (override.fixed !== undefined) tempo.fixed = !!override.fixed;
+    if (tempo.fixed) {
+      if (Number.isFinite(override.fixedBpm)) tempo.fixedBpm = override.fixedBpm;
+      const fallback = Number.isFinite(tempo.start) ? tempo.start : tempo.fixedBpm;
+      tempo.start = tempo.fixedBpm ?? fallback;
+      tempo.target = tempo.fixedBpm ?? fallback;
+    } else {
+      if (Number.isFinite(override.startBpm)) tempo.start = override.startBpm;
+      if (Number.isFinite(override.targetBpm)) tempo.target = override.targetBpm;
+      if (Number.isFinite(override.increment)) tempo.increment = Math.max(0, override.increment);
+    }
+    return { ...exercise, tempo };
+  };
+
+  const applyExerciseToState = (exercise) => {
+    if (!exercise) return;
+    const tempo = exercise.tempo || {};
+    if (tempo.fixed) {
+      const bpm = Number.isFinite(tempo.fixedBpm) ? tempo.fixedBpm : tempo.start;
+      if (Number.isFinite(bpm)) {
+        setTempo(bpm);
+        st.startBpm = bpm;
+        st.targetBpm = bpm;
+        st.stepBpm = 0;
+      }
+    } else {
+      if (Number.isFinite(tempo.start)) setTempo(tempo.start);
+      if (Number.isFinite(tempo.start)) st.startBpm = tempo.start;
+      if (Number.isFinite(tempo.target)) st.targetBpm = tempo.target;
+      if (Number.isFinite(tempo.increment)) {
+        st.stepBpm = Math.max(0, Math.round(tempo.increment));
+      }
+    }
+    st.loopMode = tempo.loopMode === 'time' ? 'time' : 'bars';
+    if (st.loopMode === 'bars') {
+      st.stepN = Math.max(1, tempo.stepBars ?? st.stepN ?? 4);
+    } else {
+      st.stepDurationSec = Math.max(10, tempo.stepDurationSec ?? st.stepDurationSec ?? 60);
+    }
+    st.armed = true;
+    hooks?.syncTempoUI?.();
+    hooks?.syncStepUI?.();
+    hooks?.renderArmState?.();
+    hooks?.updateDrillEstimate?.();
+
+    if (exercise.type === 'midi' && exercise.midiReference?.kind === 'builtin') {
+      loadBuiltInMidiSample(exercise.midiReference.id, { quiet: true })
+        .then(() => {
+          hooks?.syncMidiLibrary?.(exercise.midiReference.id);
+          hooks?.renderMidiStatus?.(`MIDI ready: ${exercise.label}`);
+        })
+        .catch((err) => {
+          console.warn('Practice queue MIDI load failed:', err);
+          hooks?.renderMidiStatus?.('Failed to load MIDI for this activity.');
+        });
+    } else {
+      clearMidi(st);
+      setMidiEnabled(st, false);
+      hooks?.syncMidiLibrary?.('');
+      hooks?.renderMidiStatus?.('No MIDI attached to this activity.');
+    }
+  };
+
+  const updateSessionView = () => {
+    if (!practiceSessionView) return;
+    const base = typeof practiceQueue?.getProgress === 'function'
+      ? practiceQueue.getProgress()
+      : null;
+    if (base?.plan) {
+      const progress = {
+        ...base,
+        entries: base.entries.map((entry) => ({ ...entry })),
+        active: base.active ? { ...base.active } : null,
+        overrides: (() => {
+          const clone = {};
+          practiceOverrides.forEach((value, key) => { clone[key] = { ...value }; });
+          return clone;
+        })(),
+      };
+      practiceSessionView.render(progress);
+      sessionCardEl?.classList.remove('hidden');
+      gridEl?.classList.add('session-active');
+    } else {
+      practiceSessionView.setIdle();
+      sessionCardEl?.classList.add('hidden');
+      gridEl?.classList.remove('session-active');
+    }
+  };
+
+  const handlePracticePlanComplete = () => {
+    st.practicePlan = null;
+    practiceOverrides.clear();
+    updateSessionView();
+    hooks?.renderMidiStatus?.('Practice session complete — nice work!');
+  };
+
+  const handleConfigureExercise = (exercise) => {
+    const merged = mergeExerciseWithOverride(exercise);
+    applyExerciseToState(merged);
+    updateSessionView();
+  };
+
+  const handleOverride = (exerciseId, payload = {}) => {
+    if (!exerciseId) return;
+    if (!payload || (typeof payload === 'object' && Object.keys(payload).length === 0)) {
+      practiceOverrides.delete(exerciseId);
+    } else {
+      const existing = practiceOverrides.get(exerciseId) || {};
+      practiceOverrides.set(exerciseId, { ...existing, ...payload });
+    }
+    const progress = practiceQueue?.getProgress?.();
+    const activeExercise = progress?.active?.exercise;
+    if (activeExercise?.id === exerciseId) {
+      handleConfigureExercise(activeExercise);
+    } else {
+      updateSessionView();
+    }
   };
 
   const queuePracticePlan = (plan) => {
     if (!plan) return;
-    st.practicePlan = plan;
-    st.practicePlanIndex = 0;
-    st.practicePlanProgress = [];
+    st.practicePlan = {
+      id: plan.id,
+      title: plan.title,
+    };
+    practiceOverrides.clear();
+    if (practiceQueue) {
+      practiceQueue.loadPlan(plan);
+      updateSessionView();
+    }
     if (router?.navigate) router.navigate('metronome');
     router?.setMenuOpen?.(false);
     const label = plan.title || 'Untitled Plan';
     if (hooks?.renderMidiStatus) {
-      hooks.renderMidiStatus(`Practice plan queued: ${label} (metronome integration coming soon)`);
+      hooks.renderMidiStatus(`Practice plan queued: ${label}`);
     } else {
       console.info('Practice plan queued:', label);
     }
@@ -138,15 +282,31 @@ function createApp({
       root: practicePlansViewEl,
       midiLibrary: BUILT_IN_MIDI,
       onQueuePlan: queuePracticePlan,
-      onExportPlan: (plan) => {
+      onExportPlan: (plan, json) => {
         if (typeof exportCurrentPlan === 'function') {
           exportCurrentPlan(plan);
         }
+        return json;
+      },
+      onSavePlan: (plan, meta = {}) => {
+        if (typeof saveUserPlan !== 'function') return;
+        let saved;
+        if (meta.isNew) {
+          saved = saveUserPlan(plan);
+        } else {
+          const overwriteId = meta.originalId || plan.id;
+          saved = saveUserPlan({ ...plan, id: overwriteId }, { overwriteId });
+        }
+        reloadPlans(saved?.id);
+      },
+      onDeletePlan: (entry) => {
+        if (typeof deleteUserPlan !== 'function') return;
+        deleteUserPlan(entry.id);
+        reloadPlans();
       },
     });
-
-    if (typeof loadPlans === 'function' && typeof window !== 'undefined') {
-      ensurePracticePlansLoaded();
+    if (typeof loadPlans === 'function') {
+      reloadPlans();
     } else {
       practicePlansView.setPlans([]);
     }
@@ -226,6 +386,8 @@ function createApp({
     const url = `./assets/midi/${entry.file}`;
     if (!opts.quiet) hooks?.renderMidiStatus?.(`Loading ${entry.label}…`);
 
+    const shouldAutoEnable = opts.autoEnable !== false;
+
     return fetch(url)
       .then((resp) => {
         if (!resp.ok) throw new Error(`Failed to load MIDI (${resp.status})`);
@@ -235,9 +397,9 @@ function createApp({
         const midiMod = await import('./midi.js');
         const parsed = midiMod.parseMidiFile(buffer);
         setMidiTrack(st, { ...parsed, name: entry.label });
-        st.midi.enabled = false;
         stopMidi(st);
-        if (st.isRunning && st.audioCtx) {
+        setMidiEnabled(st, shouldAutoEnable);
+        if (shouldAutoEnable && st.isRunning && st.audioCtx) {
           resetMidiPlayback(st, secPerBeat());
         }
         if (st.midi.instrument === 'rhodes') {
@@ -245,7 +407,12 @@ function createApp({
         }
         hooks?.syncMidiControls?.();
         hooks?.syncMidiLibrary?.(entry.id);
-        if (!opts.quiet) hooks?.renderMidiStatus?.(`${entry.label} ready — toggle Enable to hear it.`);
+        if (!opts.quiet) {
+          const status = shouldAutoEnable
+            ? `${entry.label} loaded — accompaniment armed.`
+            : `${entry.label} ready — toggle Enable to hear it.`;
+          hooks?.renderMidiStatus?.(status);
+        }
       })
       .catch((err) => {
         console.warn('Built-in MIDI load failed:', err);
@@ -258,7 +425,7 @@ function createApp({
     if (st.midi?.loaded) return;
     const first = BUILT_IN_MIDI[0];
     if (!first) return;
-    loadBuiltInMidiSample(first.id, { quiet: true }).catch(() => {});
+    loadBuiltInMidiSample(first.id, { quiet: true, autoEnable: false }).catch(() => {});
   };
 
   const setMidiInstrument = (id) => {
@@ -378,10 +545,21 @@ function createApp({
   }
 
   function stop() {
-    if (!st.isRunning) return;
+    const beatDur = secPerBeat();
+    const now = st.audioCtx?.currentTime ?? 0;
+
+    if (st.schedulerTimer) {
+      clearTimeout(st.schedulerTimer);
+      st.schedulerTimer = null;
+    }
+
     st.isRunning = false;
-    clearTimeout(st.schedulerTimer);
     stopMidi(st);
+
+    resetCounters(now, beatDur);
+
+    hooks?.onBeat?.(0, true);
+    hooks?.onKPIs?.(st);
   }
 
   function panic() {
@@ -419,6 +597,57 @@ function createApp({
     setMidiInstrument,
   });
 
+  if (typeof createPracticeQueue === 'function') {
+    practiceQueue = createPracticeQueue({
+      onConfigureExercise: handleConfigureExercise,
+      onPlanComplete: handlePracticePlanComplete,
+    });
+  }
+
+  if (sessionCardEl && typeof createPracticeSessionView === 'function') {
+    practiceSessionView = createPracticeSessionView({
+      root: sessionCardEl,
+      document: hasDOM ? document : undefined,
+      onComplete: () => {
+        practiceQueue?.completeActive();
+        updateSessionView();
+      },
+      onSkip: () => {
+        practiceQueue?.skipActive();
+        updateSessionView();
+      },
+      onPrev: () => {
+        const progress = practiceQueue?.getProgress();
+        if (!progress || progress.activeIndex === null) return;
+        const prevIndex = Math.max(0, progress.activeIndex - 1);
+        if (prevIndex !== progress.activeIndex) {
+          practiceQueue?.goTo(prevIndex);
+          updateSessionView();
+        }
+      },
+      onStop: () => {
+        practiceQueue?.reset();
+        st.practicePlan = null;
+        practiceOverrides.clear();
+        updateSessionView();
+        hooks?.renderMidiStatus?.('Practice session ended.');
+      },
+      onOverride: handleOverride,
+    });
+    sessionCardEl.classList.add('hidden');
+    updateSessionView();
+  }
+
+  const menuController = typeof attachMenuController === 'function'
+    ? attachMenuController({
+        router,
+        menuEl: sideMenuEl,
+        hamburgerEl,
+        closeEl: closeMenuEl,
+        document: hasDOM ? document : undefined,
+      })
+    : null;
+
   if (router) {
     router.registerView('metronome', {
       show: showMetronomeView,
@@ -429,19 +658,17 @@ function createApp({
       hide: hidePracticePlansView,
     });
 
-    router.onMenuToggle((open) => {
-      sideMenuEl?.classList.toggle('open', open);
-    });
-
-    hamburgerEl?.addEventListener('click', () => router.toggleMenu());
-    closeMenuEl?.addEventListener('click', () => router.setMenuOpen(false));
     navLinks.forEach((link) => {
       link.addEventListener('click', (event) => {
-        event.preventDefault();
         const route = link.dataset.route;
         if (route) {
+          event.preventDefault();
           router.navigate(route);
-          router.setMenuOpen(false);
+          if (menuController?.close) {
+            menuController.close();
+          } else {
+            router.setMenuOpen(false);
+          }
         }
       });
     });
@@ -481,6 +708,9 @@ function bootstrap() {
     import('./router.js'),
     import('./practicePlans.js'),
     import('./practicePlansView.js'),
+    import('./practiceQueue.js'),
+    import('./practiceSessionView.js'),
+    import('./menuController.js'),
   ]);
 
   load
@@ -492,6 +722,9 @@ function bootstrap() {
       routerMod,
       practicePlansMod,
       practicePlansViewMod,
+      practiceQueueMod,
+      practiceSessionViewMod,
+      menuControllerMod,
     ]) => {
       const app = createApp({
         stateMod,
@@ -501,6 +734,9 @@ function bootstrap() {
         routerMod,
         practicePlansMod,
         practicePlansViewMod,
+        practiceQueueMod,
+        practiceSessionViewMod,
+        menuControllerMod,
       });
       if (typeof window !== 'undefined') {
         window.app = { start: app.start, stop: app.stop, panic: app.panic, st: app.st };

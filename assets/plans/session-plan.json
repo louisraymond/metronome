@@ -1,0 +1,185 @@
+{
+  "id": "session-plan",
+  "title": "Session Plan",
+  "description": "Fundamentals warm-up, voicing drills and tune study queue inspired by the practice notes.",
+  "exercises": [
+    {
+      "id": "fundamentals-melodic-minor",
+      "type": "note",
+      "label": "Melodic Minor Scale (C, F, Bb)",
+      "notes": "Play the full range ascending and descending. Focus on even tone while bringing out guide tones at the top of each arpeggio.",
+      "section": "fundamentals",
+      "durationMinutes": 10,
+      "tempo": {
+        "start": 80,
+        "target": 110,
+        "increment": 5,
+        "loopMode": "bars",
+        "stepBars": 4
+      }
+    },
+    {
+      "id": "fundamentals-diatonic-triads",
+      "type": "note",
+      "label": "Diatonic Triads",
+      "notes": "Cycle triads through all keys: root position, then first and second inversion. Keep the metronome on 2 & 4 and accent beat 1 lightly.",
+      "section": "fundamentals",
+      "durationMinutes": 8,
+      "tempo": {
+        "start": 88,
+        "target": 120,
+        "increment": 4,
+        "loopMode": "bars",
+        "stepBars": 8
+      }
+    },
+    {
+      "id": "bud-powell-voicings-1",
+      "type": "midi",
+      "label": "Bud Powell Voicings Exercise 1",
+      "notes": "Shell voicings in the Bud Powell style. Lock in with the MIDI guide and keep the 3rd/7th voice leading smooth.",
+      "section": "outOfContext",
+      "durationMinutes": 8,
+      "tempo": {
+        "start": 110,
+        "target": 150,
+        "increment": 6,
+        "loopMode": "bars",
+        "stepBars": 8
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "diatonic-circle-voicings"
+      }
+    },
+    {
+      "id": "type-ab-major-ii-v-i",
+      "type": "midi",
+      "label": "Type A/B Major II-V-I (One Handed)",
+      "notes": "Play along with the Rhodes comping. Aim for legato top notes while keeping the lower voices punchy.",
+      "section": "outOfContext",
+      "durationMinutes": 6,
+      "tempo": {
+        "start": 104,
+        "target": 140,
+        "increment": 4,
+        "loopMode": "bars",
+        "stepBars": 6
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "type-ab-voicings"
+      }
+    },
+    {
+      "id": "blues-for-alice-head-bassline",
+      "type": "midi",
+      "label": "Blues for Alice – 2-Feel Bassline with Head",
+      "notes": "Walk the bass under the head melody; prioritise clear quarter notes. Use the MIDI guide to check voice leading in the turnaround.",
+      "section": "tunes",
+      "durationMinutes": 10,
+      "tempo": {
+        "start": 120,
+        "target": 168,
+        "increment": 6,
+        "loopMode": "time",
+        "stepDurationSec": 120
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "descending-cycle"
+      }
+    },
+    {
+      "id": "blues-for-alice-bassline-chords",
+      "type": "midi",
+      "label": "Blues for Alice – 2-Feel Bassline with Chords",
+      "notes": "Add shell chords on beats 2 & 4 over the walking bass. Keep the comping light and dance on the upbeat.",
+      "section": "tunes",
+      "durationMinutes": 10,
+      "tempo": {
+        "start": 116,
+        "target": 160,
+        "increment": 4,
+        "loopMode": "time",
+        "stepDurationSec": 150
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "descending-cycle"
+      }
+    },
+    {
+      "id": "blues-for-alice-left-hand-shuttle",
+      "type": "note",
+      "label": "Blues for Alice – Left Hand Shuttle",
+      "notes": "Practice the left-hand guide-tone shuttle without MIDI so you can focus on touch and dynamics.",
+      "section": "tunes",
+      "durationMinutes": 6,
+      "tempo": {
+        "start": 96,
+        "target": 132,
+        "increment": 4,
+        "loopMode": "bars",
+        "stepBars": 8
+      }
+    },
+    {
+      "id": "autumn-leaves-head",
+      "type": "midi",
+      "label": "Autumn Leaves – 2-Feel Bassline with Head (G min)",
+      "notes": "Outline the melody in the right hand while keeping a relaxed two-beat feel. Listen for how the MIDI track phrases the guide tones.",
+      "section": "interactingWithHistory",
+      "durationMinutes": 8,
+      "tempo": {
+        "start": 108,
+        "target": 140,
+        "increment": 4,
+        "loopMode": "time",
+        "stepDurationSec": 150
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "diatonic-circle-1"
+      }
+    },
+    {
+      "id": "autumn-leaves-chords",
+      "type": "midi",
+      "label": "Autumn Leaves – 2-Feel Bassline with Chords",
+      "notes": "Comp lightly above the bassline. Aim for smooth inner-voice motion and clean releases.",
+      "section": "interactingWithHistory",
+      "durationMinutes": 8,
+      "tempo": {
+        "start": 108,
+        "target": 144,
+        "increment": 4,
+        "loopMode": "time",
+        "stepDurationSec": 150
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "diatonic-circle-1"
+      }
+    },
+    {
+      "id": "autumn-leaves-left-hand-shuttle",
+      "type": "midi",
+      "label": "Autumn Leaves – Left Hand Shuttle",
+      "notes": "Lock the shuttle pattern with the accompaniment track, then drop the MIDI and keep the click only once it feels solid.",
+      "section": "interactingWithHistory",
+      "durationMinutes": 6,
+      "tempo": {
+        "start": 92,
+        "target": 132,
+        "increment": 4,
+        "loopMode": "bars",
+        "stepBars": 8
+      },
+      "midiReference": {
+        "kind": "builtin",
+        "id": "diatonic-circle-voicings"
+      }
+    }
+  ]
+}

@@ -175,16 +175,20 @@ function setupView(overrides = {}) {
   const root = document.createElement('section');
   const loadCalls = [];
   const exportCalls = [];
+  const saveCalls = [];
+  const deleteCalls = [];
 
   const view = createPracticePlansView({
     root,
     document,
     onQueuePlan: (plan) => loadCalls.push(plan),
     onExportPlan: (plan, json) => exportCalls.push({ plan, json }),
+    onSavePlan: (plan, meta) => saveCalls.push({ plan, meta }),
+    onDeletePlan: (entry) => deleteCalls.push(entry),
     ...overrides,
   });
 
-  return { document, root, view, loadCalls, exportCalls };
+  return { document, root, view, loadCalls, exportCalls, saveCalls, deleteCalls };
 }
 
 test('renders plan list and selecting a plan shows its exercises', () => {
@@ -198,6 +202,8 @@ test('renders plan list and selecting a plan shows its exercises', () => {
         type: 'note',
         label: 'Chromatic ladder',
         notes: 'Ascending + descending',
+        section: 'fundamentals',
+        durationMinutes: 6,
         tempo: { start: 90, target: 110, increment: 5, loopMode: 'bars', stepBars: 4 },
       },
       {
@@ -205,6 +211,8 @@ test('renders plan list and selecting a plan shows its exercises', () => {
         type: 'midi',
         label: 'Scale with MIDI',
         notes: 'Play with backing track',
+        section: 'outOfContext',
+        durationMinutes: 4,
         tempo: { start: 100, target: 120, increment: 4, loopMode: 'time', stepDurationSec: 90 },
         midiReference: { kind: 'builtin', id: 'type-ab-voicings' },
       },
@@ -221,6 +229,8 @@ test('renders plan list and selecting a plan shows its exercises', () => {
         type: 'midi',
         label: 'Drop 2 cycle',
         notes: 'Keep it smooth',
+        section: 'tunes',
+        durationMinutes: 9,
         tempo: { start: 120, target: 160, increment: 8, loopMode: 'bars', stepBars: 8 },
         midiReference: { kind: 'builtin', id: 'descending-cycle' },
       },
@@ -240,16 +250,24 @@ test('renders plan list and selecting a plan shows its exercises', () => {
   assert.equal(listItems[1].textContent, 'Voicing Focus');
 
   assert.equal(view.getSelectedPlan().id, warmupPlan.id);
-  let exerciseItems = view.getExerciseItems();
-  assert.equal(exerciseItems.length, warmupPlan.exercises.length);
-  assert.equal(exerciseItems[0].dataset.exerciseId, 'ex1');
+  const fundamentalsItems = view.getExercisesBySection('fundamentals');
+  assert.equal(fundamentalsItems.length, 1);
+  assert.equal(fundamentalsItems[0].dataset.exerciseId, 'ex1');
+  const totals = view.getRenderedSectionSummaries();
+  assert.equal(totals.fundamentals.minutes, 6);
+  assert.equal(totals.outOfContext.minutes, 4);
+  assert.equal(totals.tunes.minutes, 0);
+  assert.equal(totals.interactingWithHistory.minutes, 0);
+  assert.equal(view.getRenderedTotalMinutes(), 10);
 
   view.selectPlan('voicings');
   assert.equal(view.getSelectedPlan().id, voicingsPlan.id);
 
-  exerciseItems = view.getExerciseItems();
-  assert.equal(exerciseItems.length, voicingsPlan.exercises.length);
-  assert.equal(exerciseItems[0].textContent.includes('Drop 2 cycle'), true);
+  const tunesItems = view.getExercisesBySection('tunes');
+  assert.equal(tunesItems.length, 1);
+  assert.equal(tunesItems[0].textContent.includes('Drop 2 cycle'), true);
+  assert.equal(view.getRenderedSectionSummaries().tunes.minutes, 9);
+  assert.equal(view.getRenderedTotalMinutes(), 9);
 });
 
 test('exporting the active plan returns serialized JSON and triggers callback', () => {
@@ -263,6 +281,8 @@ test('exporting the active plan returns serialized JSON and triggers callback', 
         type: 'note',
         label: 'Arpeggios',
         notes: 'Major/minor inversions',
+        section: 'fundamentals',
+        durationMinutes: 7,
         tempo: { start: 80, target: 110, increment: 5, loopMode: 'bars', stepBars: 6 },
       },
     ],
@@ -283,4 +303,80 @@ test('exporting the active plan returns serialized JSON and triggers callback', 
   assert.equal(exportCalls.length, 1);
   assert.equal(exportCalls[0].plan.id, plan.id);
   assert.equal(exportCalls[0].json, json);
+  assert.equal(view.getRenderedTotalMinutes(), 7);
+});
+
+test('editing a custom plan invokes save callback with updated tempo data', () => {
+  const basePlan = buildPlan({
+    id: 'custom-plan',
+    title: 'Custom Drill',
+    description: 'Editable copy',
+    exercises: [
+      {
+        id: 'cx1',
+        type: 'note',
+        label: 'Scale Paths',
+        section: 'fundamentals',
+        durationMinutes: 5,
+        tempo: { start: 100, target: 120, increment: 4, loopMode: 'bars', stepBars: 4 },
+      },
+    ],
+  });
+
+  const { view, saveCalls } = setupView();
+
+  view.setPlans([
+    { id: basePlan.id, title: basePlan.title, description: basePlan.description, plan: basePlan, source: 'custom' },
+  ]);
+
+  view.beginEdit(basePlan.id);
+  const draft = view.getDraft();
+  draft.title = 'Updated Custom Drill';
+  draft.exercises[0].tempo.fixed = true;
+  draft.exercises[0].tempo.fixedBpm = 132;
+  view.saveDraft();
+
+  assert.equal(saveCalls.length, 1);
+  const { plan, meta } = saveCalls[0];
+  assert.equal(meta.isNew, false);
+  assert.equal(meta.source, 'custom');
+  assert.equal(meta.originalId, basePlan.id);
+  assert.equal(plan.title, 'Updated Custom Drill');
+  assert.equal(plan.exercises[0].tempo.fixed, true);
+  assert.equal(plan.exercises[0].tempo.fixedBpm, 132);
+});
+
+test('creating a new plan marks the save as new', () => {
+  const { view, saveCalls } = setupView();
+  view.beginCreatePlan();
+  assert.equal(view.isEditing(), true);
+  const draft = view.getDraft();
+  draft.title = 'Brand New Plan';
+  draft.exercises.push({
+    id: 'temp-one',
+    type: 'note',
+    label: 'Warm-up',
+    notes: '',
+    section: 'fundamentals',
+    durationMinutes: 5,
+    tempo: { start: 90, target: 110, increment: 5, loopMode: 'bars', stepBars: 4, fixed: false },
+  });
+  view.saveDraft();
+
+  assert.equal(saveCalls.length, 1);
+  const { plan, meta } = saveCalls[0];
+  assert.equal(meta.isNew, true);
+  assert.equal(plan.title, 'Brand New Plan');
+  assert.equal(plan.exercises.length, 1);
+});
+
+test('delete callback fires for custom plans', () => {
+  const plan = buildPlan({ id: 'delete-me', title: 'To Remove', exercises: [] });
+  const { view, deleteCalls } = setupView();
+  view.setPlans([
+    { id: plan.id, title: plan.title, description: plan.description, plan, source: 'custom' },
+  ]);
+  view.deletePlan(plan.id);
+  assert.equal(deleteCalls.length, 1);
+  assert.equal(deleteCalls[0].id, plan.id);
 });

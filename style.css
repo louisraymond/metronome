@@ -102,12 +102,43 @@ header {
 .grid {
 	display: grid;
 	gap: 18px;
-	grid-template-columns: 1.1fr 1fr
+	grid-template-columns: 1.1fr 1fr;
+	align-items: stretch;
+}
+
+.grid .card {
+	align-self: stretch;
+}
+
+.grid.session-active {
+	grid-template-columns: minmax(240px, 320px) minmax(340px, 1fr);
+	grid-template-areas:
+		"session metronome"
+		"session speed";
+}
+
+.grid.session-active .session-card {
+	grid-area: session;
+}
+
+.grid.session-active .metronome-card {
+	grid-area: metronome;
+}
+
+.grid.session-active .speed-card {
+	grid-area: speed;
 }
 
 @media (max-width:1100px) {
 	.grid {
-		grid-template-columns: 1fr
+		grid-template-columns: 1fr;
+	}
+	.grid.session-active {
+		grid-template-columns: 1fr;
+		grid-template-areas:
+			"session"
+			"metronome"
+			"speed";
 	}
 }
 
@@ -397,14 +428,15 @@ input[type="range"] {
 
 .side-menu {
 	position: fixed;
-	left: -240px;
 	top: 0;
+	left: 0;
 	bottom: 0;
-	width: 220px;
+	width: 240px;
 	background: rgba(5, 12, 25, 0.92);
 	box-shadow: 6px 0 18px rgba(0, 0, 0, 0.35);
 	padding: 20px 16px;
 	transition: transform 0.3s ease;
+	transform: translateX(-115%);
 	z-index: 999;
 	display: flex;
 	flex-direction: column;
@@ -412,7 +444,7 @@ input[type="range"] {
 }
 
 .side-menu.open {
-	transform: translateX(240px);
+	transform: translateX(0);
 }
 
 .side-menu .close {
@@ -445,6 +477,10 @@ input[type="range"] {
 .side-menu a.active,
 .side-menu a:hover {
 	background: rgba(142, 197, 255, 0.2);
+}
+
+body.menu-open {
+	overflow: hidden;
 }
 
 .placeholder {
@@ -495,6 +531,13 @@ input[type="range"] {
 	gap: 10px;
 }
 
+.practice-plans-view .plan-list-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
 .practice-plans-view .plan-list-item {
 	margin: 0;
 }
@@ -523,10 +566,20 @@ input[type="range"] {
 	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 
+.practice-plans-view .plan-time-total {
+	font-size: 13px;
+	color: var(--muted);
+}
+
 .practice-plans-view .plan-detail-header {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+}
+
+.practice-plans-view .plan-editor-status {
+	font-size: 12px;
+	color: var(--muted);
 }
 
 .practice-plans-view .plan-detail-title {
@@ -542,6 +595,12 @@ input[type="range"] {
 	max-width: 640px;
 }
 
+.practice-plans-view .plan-sections {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
 .practice-plans-view .exercise-list {
 	list-style: none;
 	counter-reset: exercise;
@@ -552,6 +611,25 @@ input[type="range"] {
 	gap: 12px;
 }
 
+.practice-plans-view .plan-section-block {
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 14px;
+	padding: 12px 14px;
+}
+
+.practice-plans-view .plan-section-title {
+	margin: 0 0 6px;
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.practice-plans-view .plan-section-meta {
+	font-size: 12px;
+	color: var(--muted);
+	margin-bottom: 8px;
+}
+
 .practice-plans-view .exercise-item {
 	position: relative;
 	padding: 12px 14px 12px 46px;
@@ -559,6 +637,13 @@ input[type="range"] {
 	border: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: 14px;
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.practice-plans-view .exercise-item.editing {
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .practice-plans-view .exercise-item::before {
@@ -597,6 +682,77 @@ input[type="range"] {
 	opacity: 0.85;
 }
 
+.practice-plans-view .exercise-notes-edit {
+	min-height: 60px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	padding: 8px;
+	background: rgba(255, 255, 255, 0.05);
+	color: inherit;
+}
+
+.practice-plans-view .exercise-edit-row {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.practice-plans-view .exercise-edit-row label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.practice-plans-view .exercise-edit-row input,
+.practice-plans-view .exercise-edit-row select,
+.practice-plans-view .exercise-notes-edit,
+.practice-plans-view .tempo-editor input,
+.practice-plans-view .tempo-editor select,
+.practice-plans-view .tempo-editor textarea {
+	color: inherit;
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-radius: 8px;
+	padding: 6px 8px;
+}
+
+.practice-plans-view .tempo-editor {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: flex-end;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 10px;
+	padding: 10px;
+}
+
+.practice-plans-view .tempo-editor label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.practice-plans-view .tempo-editor .tempo-toggle {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
+}
+
+.practice-plans-view .tempo-editor .hidden {
+	display: none;
+}
+
+.practice-plans-view .exercise-duration {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--muted);
+}
+
 .practice-plans-view .plan-controls {
 	margin-top: auto;
 	display: flex;
@@ -611,5 +767,123 @@ input[type="range"] {
 	background: rgba(255, 255, 255, 0.04);
 	border-radius: 12px;
 	border: 1px dashed rgba(255, 255, 255, 0.2);
+	color: var(--muted);
+}
+
+.practice-session-view {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.practice-session-view .session-header {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.practice-session-view .session-status {
+	font-weight: 700;
+}
+
+.practice-session-view .session-summary {
+	font-size: 13px;
+	color: var(--muted);
+}
+
+.practice-session-view .session-entries {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.practice-session-view .session-entry {
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 12px;
+	padding: 8px 10px;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.practice-session-view .session-entry.active {
+	border-color: rgba(255, 209, 102, 0.6);
+	box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+.practice-session-view .session-entry.complete {
+	opacity: 0.7;
+}
+
+.practice-session-view .session-entry.skipped {
+	opacity: 0.7;
+	border-style: dashed;
+}
+
+.practice-session-view .session-entry-title {
+	font-weight: 600;
+}
+
+.practice-session-view .session-entry-meta {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+.practice-session-view .session-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.practice-session-view .session-override {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 10px;
+	padding: 10px;
+}
+
+.practice-session-view .session-override.hidden {
+	display: none;
+}
+
+.practice-session-view .session-override-title {
+	font-size: 12px;
+	color: var(--muted);
+	font-weight: 600;
+}
+
+.practice-session-view .session-override-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: flex-end;
+}
+
+.practice-session-view .session-override-fields label {
+	font-size: 12px;
+	color: var(--muted);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.practice-session-view .session-override-range.hidden {
+	display: none;
+}
+
+.practice-session-view .session-override-fields input[type="number"] {
+	background: rgba(255, 255, 255, 0.08);
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 8px;
+	color: inherit;
+	padding: 6px 8px;
+}
+
+.session-placeholder {
+	font-size: 13px;
 	color: var(--muted);
 }

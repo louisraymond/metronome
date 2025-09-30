@@ -12,7 +12,7 @@
 <body>
   <header>
     <div class="brand">
-      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu" aria-expanded="false" aria-controls="sideMenu">
         <span></span>
         <span></span>
         <span></span>
@@ -27,7 +27,7 @@
     </div>
   </header>
 
-  <nav class="side-menu" id="sideMenu">
+  <nav class="side-menu" id="sideMenu" aria-hidden="true">
     <button class="close" id="closeMenuBtn" aria-label="Close menu">×</button>
     <ul>
       <li><a href="#metronome" data-route="metronome" class="active">Metronome</a></li>
@@ -38,7 +38,7 @@
   <main class="wrap" id="metronomeView">
     <div class="grid">
       <!-- Metronome -->
-      <section class="card">
+      <section class="card metronome-card">
         <h2>Metronome</h2>
         <div class="tempo-display">
           <div class="tempo-circle" id="tempoCircle">
@@ -132,7 +132,7 @@
       </section>
 
       <!-- Speed Trainer -->
-      <section class="card">
+      <section class="card speed-card">
         <h2>Speed Trainer</h2>
         <div class="row">
           <div class="col"><label>Start BPM</label><input type="number" id="startBpm" value="120" min="20" max="300"/></div>
@@ -175,6 +175,13 @@
         </div>
         <div class="small" id="drillEstimate" style="margin-top:4px">Estimated time: —</div>
       </section>
+
+      <section class="card session-card hidden" id="sessionProgressCard">
+        <h2>Practice Session</h2>
+        <div class="session-placeholder" data-testid="session-placeholder">
+          Load a practice plan to track your progress here.
+        </div>
+      </section>
     </div>
   </main>
 
@@ -182,7 +189,7 @@
     <section class="card">
       <h2>Practice Plans</h2>
       <p class="small" style="max-width:600px">
-        Queue prebuilt exercises, set tempo targets, and export plans as JSON. UI coming soon — placeholder for now.
+        Review practice plans grouped by section, check the time budget, and load a session directly into the metronome.
       </p>
       <div class="placeholder">
         <p>No plans loaded yet. Export from the metronome view or drop JSON files into <code>assets/plans/</code>.</p>
